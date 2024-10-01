@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Engine</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <input id="searchBox" type="text" autocomplete="off">
+    <button onclick="search()" id="searchButton">Search</button>
+    <div id="results"></div>
+
+    <script>
+        async function search() {
+            let query = document.getElementById('searchBox').value;
+            const url = 'http://localhost:3000/search?q=' + encodeURIComponent(query.trim());
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.text) {
+                    let p = document.createElement('p');
+                    p.innerText = await data.text;
+                    p.id = 'spellCheckText';
+                    document.body.appendChild(p);
+                    return;
+                }
+
+                while (document.getElementById('results').firstChild) {
+                    document.getElementById('results').removeChild(document.getElementById('results').lastChild);
+                }
+
+                if (data.length === 0) {
+                    let p = document.createElement('p');
+                    p.innerText = 'No results found';
+                    document.getElementById('results').appendChild(p); 
+                    return;
+                }
+
+                for (let result of data) {
+                    let div = document.createElement('div');
+                    div.className = 'result-item';
+                    document.getElementById('results').appendChild(div);
+
+                    // Logo
+                    let logo = document.createElement('img');
+                    logo.src = result.logo || 'default-logo.png';
+                    logo.alt = 'Website logo';
+                    logo.className = 'result-logo';
+                    div.appendChild(logo);
+
+                    // Content Container
+                    let contentDiv = document.createElement('div');
+                    contentDiv.className = 'result-content';
+                    div.appendChild(contentDiv);
+
+                    // Website Title
+                    let webTitle = document.createElement('p');
+                    webTitle.innerText = result.webtitle;
+                    webTitle.className = 'web-title';
+                    contentDiv.appendChild(webTitle);
+
+                    // URL with > separator, excluding the protocol and removing parameters
+                    let urlDisplay = document.createElement('span');
+                    let formattedUrl = result.site.replace(/^(https?:\/\/)/, ''); // Remove the protocol
+                    formattedUrl = formattedUrl.split('?')[0]; // Remove URL parameters
+                    formattedUrl = formattedUrl.endsWith('/') ? formattedUrl.slice(0, -1) : formattedUrl; // Remove trailing slash
+                    formattedUrl = formattedUrl.replace(/\//g, ' > '); // Replace / with >
+                    urlDisplay.innerText = result.site.match(/^(https?:\/\/)/)[0] + formattedUrl; // Add back the protocol
+                    urlDisplay.className = 'result-url';
+                    contentDiv.appendChild(urlDisplay);
+
+                    // Title
+                    let title = document.createElement('h2');
+                    let link = document.createElement('a');
+                    link.href = result.site;
+                    link.innerText = result.title;
+                    link.className = 'result-link';
+                    title.appendChild(link);
+                    contentDiv.appendChild(title);
+
+                    // Description
+                    let description = document.createElement('p');
+                    description.innerText = result.description || 'We are not able to give a description for this webpage.';
+                    contentDiv.appendChild(description);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+    </script>    
+</body>
+</html>
